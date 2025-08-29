@@ -54,59 +54,59 @@
   </div>
 
 <script>
-  // ====== CONFIG ======
-  const LIFF_ID   = "2007996778-ojPmjnww";
-  const OA_URL    = "https://line.me/R/ti/p/@vreasyhealthy";
+  /* ========= CONFIG ========= */
+  const LIFF_ID      = "2007996778-ojPmjnww";
+  const OA_URL       = "https://line.me/R/ti/p/@vreasyhealthy";
   const LEGACY_REGISTER = "https://www.legacy.co.th/member/register?sp=167328";
-  const DONE_PAGE = "https://vrheralthy.github.io/vip/done.html";
-  const WEBAPP_URL= "https://script.google.com/macros/s/AKfycbxrIR6CdO-saT-5wcSznL99LJVL3sL0QSdD6cPmXBV86cCAWIEkj69ztTVbZPxchLE/exec";
-  // *** เปลี่ยนค่านี้ให้ตรงกับ Script property APP_TOKEN ***
-  const APP_TOKEN = "vRH-2025-ProdSecret"; // <- แก้เป็นของคุณ
+  const DONE_PAGE    = "https://vrheralthy.github.io/vip/done.html";
+  const WEBAPP_URL   = "https://script.google.com/macros/s/AKfycbxrIR6CdO-saT-5wcSznL99LJVL3sL0QSdD6cPmXBV86cCAWIEkj69ztTVbZPxchLE/exec";
+  const APP_TOKEN    = "vRH-2025-ProdSecret";  // <— แก้ให้ตรงกับ Script properties
 
-  // ====== HELPERS ======
+  /* ========= UI HELPERS ========= */
   const $ = (q)=>document.querySelector(q);
   const statusEl = $('#status'); const actions = $('#actions'); const spin = $('#spin');
   const setStatus = (txt,cls)=>{ statusEl.textContent = txt; statusEl.className = cls||''; };
 
+  /* ========= LOGGING (safe) ========= */
+  function logSend(data){
+    const payload = JSON.stringify(data);
+    try{
+      if (navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: 'text/plain' });
+        navigator.sendBeacon(WEBAPP_URL, blob);
+        return;
+      }
+    }catch(e){}
+    fetch(WEBAPP_URL, { method:'POST', body: payload, mode:'no-cors', keepalive:true }).catch(()=>{});
+  }
+  async function logEventStart(friendFlag, profile){
+    logSend({
+      token: APP_TOKEN,
+      event: 'vip_register_start',
+      liffId: LIFF_ID,
+      userId: profile?.userId || '',
+      displayName: profile?.displayName || '',
+      pictureUrl: profile?.pictureUrl || '',
+      statusMessage: profile?.statusMessage || '',
+      friendFlag: !!friendFlag,
+      sourcePage: 'index.html',
+      referrer: document.referrer || '',
+      returnUrl: DONE_PAGE,
+      userAgent: navigator.userAgent,
+      origin: location.origin,
+      extra: { href: location.href }
+    });
+  }
+
+  /* ========= FLOW HELPERS ========= */
   function buildRegisterUrl(){
-    // แนบ return ไปยัง done.html
-    const url = `${LEGACY_REGISTER}&return=${encodeURIComponent(DONE_PAGE)}`;
-    return url;
+    return `${LEGACY_REGISTER}&return=${encodeURIComponent(DONE_PAGE)}`;
   }
   function goRegister(){
     const url = buildRegisterUrl();
     if (liff.isInClient()) { liff.openWindow({ url, external:false }); }
     else { window.location.assign(url); }
   }
-
-  async function logEventStart(friendFlag, profile){
-    try{
-      const body = {
-        token: APP_TOKEN,
-        event: 'vip_register_start',
-        liffId: LIFF_ID,
-        userId: profile?.userId || '',
-        displayName: profile?.displayName || '',
-        pictureUrl: profile?.pictureUrl || '',
-        statusMessage: profile?.statusMessage || '',
-        friendFlag: !!friendFlag,
-        sourcePage: 'index.html',
-        referrer: document.referrer || '',
-        returnUrl: DONE_PAGE,
-        userAgent: navigator.userAgent,
-        origin: location.origin,
-        extra: { href: location.href }
-      };
-      await fetch(WEBAPP_URL, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify(body),
-        mode: 'cors', // บางเบราว์เซอร์จะไม่โชว์ response แต่การบันทึกยังทำงาน
-        keepalive: true
-      });
-    }catch(e){ console.error('logEventStart error', e); }
-  }
-
   function showAddFriend(){
     setStatus("ยังไม่ได้เป็นเพื่อนกับ @vreasyhealthy","err");
     spin.classList.add('hide');
@@ -116,8 +116,19 @@
     `;
     $('#btnCheck').onclick = ()=>window.location.reload();
   }
-  function showGoRegisterUI(){
+  async function sendGreeting(profile){
+    try{
+      if (!liff.isInClient()) return;
+      const name = profile?.displayName ? ` (${profile.displayName})` : '';
+      await liff.sendMessages([
+        { type: 'text', text: `สวัสดีค่ะ ขอลงทะเบียน VIP${name}` },
+        { type: 'text', text: `เริ่มขั้นตอนสมัครสมาชิกแล้วค่ะ` }
+      ]);
+    }catch(e){}
+  }
+  async function showGoRegisterUI(profile){
     setStatus("เป็นเพื่อนเรียบร้อย กำลังพาไปหน้าสมัครสมาชิก…","ok");
+    await sendGreeting(profile);
     goRegister();
     setTimeout(()=>{
       spin.classList.add('hide');
@@ -126,7 +137,7 @@
     }, 1200);
   }
 
-  // ====== MAIN ======
+  /* ========= MAIN ========= */
   (async () => {
     try{
       await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser:true });
@@ -134,22 +145,14 @@
 
       $('#btnGoManual').onclick = goRegister;
 
-      const url = new URL(window.location.href);
-      // ถ้าถูกเรียกมาแบบผิด step ให้แค่โชว์ปุ่ม manual
-      if (url.searchParams.get('step') === 'done') {
-        setStatus("เรียกกลับหน้าสำเร็จแล้ว คุณสามารถกดกลับไปแชทได้","ok");
-        spin.classList.add('hide');
-        return;
-      }
-
       const friendship = await liff.getFriendship().catch(()=>({friendFlag:false}));
       const profile    = await liff.getProfile().catch(()=> ({}));
-      // บันทึกเริ่มต้น
+
+      // บันทึกการเริ่มเข้า flow
       logEventStart(friendship?.friendFlag, profile);
 
-      // ตัดสินใจ flow
       if (!friendship?.friendFlag) showAddFriend();
-      else showGoRegisterUI();
+      else await showGoRegisterUI(profile);
 
     }catch(err){
       console.error(err);
