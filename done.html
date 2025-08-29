@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8">
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<body style="font-family:system-ui;padding:24px">
+  <h3>สมัครสำเร็จแล้ว 🎉</h3>
+  <p>กำลังพาคุณกลับไปคุยกับ @vreasyhealthy</p>
+  <button id="back">กลับไปที่ LINE</button>
+<script>
+(async () => {
+  const LIFF_ID = "2007996778-ojPmjnww";
+  await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true });
+  const go = () => {
+    if (liff.isInClient()) liff.closeWindow();
+    else window.location.href = "https://line.me/R/ti/p/@vreasyhealthy";
+  };
+  document.getElementById('back').onclick = go;
+  // auto after 1.5s
+  setTimeout(go, 1500);
+})();
+</script>
