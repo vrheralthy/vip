@@ -32,51 +32,67 @@
   </div>
 
 <script>
-  const LIFF_ID   = "2007996778-ojPmjnww";
-  const OA_URL    = "https://line.me/R/ti/p/@vreasyhealthy";
-  const WEBAPP_URL= "https://script.google.com/macros/s/AKfycbxrIR6CdO-saT-5wcSznL99LJVL3sL0QSdD6cPmXBV86cCAWIEkj69ztTVbZPxchLE/exec";
-  // ใช้ค่าเดียวกับ APP_TOKEN ใน Script properties
-  const APP_TOKEN = "vRH-2025-ProdSecret"; // <- แก้เป็นของคุณ
+  /* ========= CONFIG ========= */
+  const LIFF_ID    = "2007996778-ojPmjnww";
+  const OA_URL     = "https://line.me/R/ti/p/@vreasyhealthy";
+  const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxrIR6CdO-saT-5wcSznL99LJVL3sL0QSdD6cPmXBV86cCAWIEkj69ztTVbZPxchLE/exec";
+  const APP_TOKEN  = "vRH-2025-ProdSecret";  // <— แก้ให้ตรงกับ Script properties
 
-  async function logEventDone(profile){
+  /* ========= LOGGING (safe) ========= */
+  function logSend(data){
+    const payload = JSON.stringify(data);
     try{
-      const body = {
-        token: APP_TOKEN,
-        event: 'vip_register_done',
-        liffId: LIFF_ID,
-        userId: profile?.userId || '',
-        displayName: profile?.displayName || '',
-        pictureUrl: profile?.pictureUrl || '',
-        statusMessage: profile?.statusMessage || '',
-        friendFlag: true,
-        sourcePage: 'done.html',
-        referrer: document.referrer || '',
-        returnUrl: OA_URL,
-        userAgent: navigator.userAgent,
-        origin: location.origin,
-        extra: { href: location.href }
-      };
-      await fetch(WEBAPP_URL, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify(body),
-        mode:'cors',
-        keepalive:true
-      });
-    }catch(e){ console.error('logEventDone error', e); }
+      if (navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: 'text/plain' });
+        navigator.sendBeacon(WEBAPP_URL, blob);
+        return;
+      }
+    }catch(e){}
+    fetch(WEBAPP_URL, { method:'POST', body: payload, mode:'no-cors', keepalive:true }).catch(()=>{});
+  }
+  async function logEventDone(profile){
+    logSend({
+      token: APP_TOKEN,
+      event: 'vip_register_done',
+      liffId: LIFF_ID,
+      userId: profile?.userId || '',
+      displayName: profile?.displayName || '',
+      pictureUrl: profile?.pictureUrl || '',
+      statusMessage: profile?.statusMessage || '',
+      friendFlag: true,
+      sourcePage: 'done.html',
+      referrer: document.referrer || '',
+      returnUrl: OA_URL,
+      userAgent: navigator.userAgent,
+      origin: location.origin,
+      extra: { href: location.href }
+    });
   }
 
+  /* ========= OA GREETING ========= */
+  async function sendThanks(profile){
+    try{
+      if (!liff.isInClient()) return;
+      const name = profile?.displayName ? ` (${profile.displayName})` : '';
+      await liff.sendMessages([
+        { type: 'text', text: `ลงทะเบียน VIP สำเร็จค่ะ${name}` },
+        { type: 'text', text: `ต้องการคำแนะนำการใช้งานสินค้าตัวไหน แจ้งได้เลยค่ะ` }
+      ]);
+    }catch(e){}
+  }
+
+  /* ========= MAIN ========= */
   (async () => {
     try{
       await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser:true });
       const profile = await liff.getProfile().catch(()=> ({}));
       logEventDone(profile);
+      await sendThanks(profile);
 
       const goBack = () => { if (liff.isInClient()) liff.closeWindow(); else window.location.href = OA_URL; };
       document.getElementById('btnBack').onclick = goBack;
       setTimeout(goBack, 2000);
     }catch(e){
-      console.error(e);
       setTimeout(()=>window.location.href = OA_URL, 2500);
     }
   })();
