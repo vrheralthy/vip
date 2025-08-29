@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VIP Entry | @vreasyhealthy</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 20px; }
+    .card { max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #eee; border-radius: 16px; }
+    .btn { display:inline-block; padding:12px 16px; border-radius:12px; border:1px solid #ccc; text-decoration:none; }
+    .btn-primary { border-color:#2b8a3e; }
+  </style>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+<div class="card">
+  <h2>VIP Registration</h2>
+  <p>กรุณา Add Friend กับ @vreasyhealthy ก่อน จากนั้นระบบจะพาไปสมัครสมาชิก</p>
+  <div id="status">กำลังตรวจสอบสถานะ…</div>
+  <div id="actions" style="margin-top:16px;"></div>
+</div>
+
+<script>
+  const LIFF_ID = "<YOUR_LIFF_ID>"; // ใส่ LIFF ID จริง
+  const OA_ADD_FRIEND_URL = "https://line.me/R/ti/p/@vreasyhealthy";
+  const LEGACY_REGISTER = "https://www.legacy.co.th/member/register?sp=167328";
+
+  // URL ที่จะให้ระบบ "กลับมาหลังสมัครเสร็จ"
+  // ถ้าแก้ไขหน้า legacy ไม่ได้ ให้คุณส่งลูกค้าไปสมัคร แล้วให้ลูกค้า “กดกลับ” เอง
+  // แต่ถ้าคุณมีหน้า bridge ของตัวเอง เช่น https://your-domain.com/vip-done ก็ใช้หน้านั้น
+  const RETURN_LIFF_DEEPLINK = `https://liff.line.me/${LIFF_ID}?step=done`;
+
+  async function main() {
+    await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true });
+    if (!liff.isLoggedIn()) liff.login();
+
+    const statusEl = document.getElementById('status');
+    const actions = document.getElementById('actions');
+
+    // กรณีกลับมาหลังสมัคร
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('step') === 'done') {
+      statusEl.innerText = "ขอบคุณที่สมัครสำเร็จ 🎉 ระบบจะพาคุณกลับไปที่แชท";
+      try {
+        if (liff.isInClient()) {
+          // ส่งข้อความยืนยันกลับหา OA (ถ้าต้องการ)
+          // await liff.sendMessages([{ type: 'text', text: 'VIP: Registration completed.' }]);
+          liff.closeWindow();
+        } else {
+          // กลับไปคุยกับ OA ผ่านลิงก์
+          window.location.href = "https://line.me/R/ti/p/@vreasyhealthy";
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      return;
+    }
+
+    // ตรวจว่าผู้ใช้เป็นเพื่อน OA แล้วหรือยัง
+    try {
+      const friendship = await liff.getFriendship();
+      if (!friendship.friendFlag) {
+        statusEl.innerText = "ยังไม่ได้เป็นเพื่อนกับ @vreasyhealthy";
+        actions.innerHTML = `
+          <a class="btn btn-primary" href="${OA_ADD_FRIEND_URL}" target="_blank" rel="noopener">➕ Add Friend</a>
+          <button class="btn" id="btnCheck">ฉันกด Add แล้ว</button>
+        `;
+        document.getElementById('btnCheck').onclick = () => window.location.reload();
+        return;
+      }
+
+      // เป็นเพื่อนแล้ว → ไปสมัครสมาชิก
+      statusEl.innerText = "เป็นเพื่อนเรียบร้อย กำลังพาไปหน้าสมัครสมาชิก…";
+      // แนบ state สำหรับให้ผู้ใช้กด “กลับสู่ LINE” ได้สะดวก
+      const state = encodeURIComponent(RETURN_LIFF_DEEPLINK);
+      const registerUrl = `${LEGACY_REGISTER}&return=${state}`;
+      // เปิดในหน้าเดียวกัน (in-app browser)
+      liff.openWindow({ url: registerUrl, external: false });
+
+    } catch (err) {
+      console.error(err);
+      statusEl.innerText = "ไม่สามารถตรวจสอบสถานะได้ กรุณาลองใหม่";
+    }
+  }
+
+  main();
+</script>
+</body>
+</html>
