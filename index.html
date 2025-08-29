@@ -5,72 +5,158 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>VIP Entry | @vreasyhealthy</title>
   <meta name="theme-color" content="#16a34a" />
+  <meta name="referrer" content="no-referrer-when-downgrade" />
   <style>
-    /* ... (ใช้สไตล์เดิมที่ปรับให้สวยแล้ว) ... */
+    :root{--bg:#0b0f14;--card:#0f1720;--muted:#8aa0b4;--text:#e8f0f7;--primary:#16a34a;--primary-2:#22c55e;--border:#16212c;--shadow:0 10px 30px rgba(0,0,0,.35);--radius:18px}
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:
+      radial-gradient(1200px 600px at 80% -10%, #17324a 0%, transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, #123b28 0%, transparent 60%),var(--bg);
+      color:var(--text);display:grid;place-items:center;padding:24px;line-height:1.55}
+    .wrap{width:100%;max-width:620px}
+    .brand{display:flex;gap:12px;margin:0 0 16px;color:#d9f99d;font-weight:700;letter-spacing:.2px;text-transform:uppercase;font-size:12px}
+    .chip{border:1px solid #2a3a47;padding:4px 10px;border-radius:999px;background:#0f1a22}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0)) , var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px}
+    h1{margin:0 0 6px;font-size:28px} p.lead{margin:0 0 16px;color:var(--muted)}
+    #status{margin-top:6px;color:#cfe1ff} .divider{height:1px;background:#17222e;margin:18px 0}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+    .btn{appearance:none;border:1px solid #2b3846;background:#0e1821;color:#dbeafe;padding:12px 16px;border-radius:14px;cursor:pointer;font-weight:600;transition:.15s ease;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+    .btn:hover{transform:translateY(-1px);border-color:#3a4a5a} .btn:active{transform:translateY(0)}
+    .btn-primary{background:linear-gradient(180deg,var(--primary-2),var(--primary));color:#06240f;border-color:#22c55e;box-shadow:0 6px 20px rgba(34,197,94,.35)}
+    .btn-ghost{background:transparent} .muted{color:var(--muted);font-size:13px}
+    .center{display:flex;align-items:center;gap:10px}
+    .spinner{width:18px;height:18px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:#93c5fd;animation:spin .9s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .hide{display:none !important} .ok{color:#bbf7d0} .err{color:#fecaca}
   </style>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
   <div class="wrap">
-    <!-- UI เดิมตามที่ปรับแล้ว -->
-    <div class="card">
+    <div class="brand"><span class="chip">VREASYHEALTHY</span> VIP FLOW</div>
+    <div class="card" role="main">
       <h1>VIP Registration</h1>
-      <p class="lead">กรุณา Add Friend กับ <b>@vreasyhealthy</b> ก่อน จากนั้นระบบจะพาไปสมัครสมาชิก Legacy</p>
+      <p class="lead">กรุณา Add Friend กับ <b>@vreasyhealthy</b> ก่อน จากนั้นระบบจะพาไปสมัครสมาชิก Legacy เพื่อรับสิทธิพิเศษ</p>
+
       <div class="center muted">
-        <div id="spin" class="spinner"></div>
-        <div id="status">กำลังตรวจสอบสถานะ…</div>
+        <div id="spin" class="spinner" aria-hidden="true"></div>
+        <div id="status" aria-live="polite">กำลังตรวจสอบสถานะ…</div>
       </div>
-      <div class="row" id="actions"></div>
+
+      <div class="row" id="actions" aria-label="actions"></div>
+      <div class="divider"></div>
+      <div class="muted">หากไม่เด้งอัตโนมัติ ให้กดปุ่มด้านล่าง</div>
+      <div class="row">
+        <button class="btn btn-primary" id="btnGoManual">ไปสมัครสมาชิก</button>
+        <a class="btn btn-ghost" id="btnBackToOA" href="https://line.me/R/ti/p/@vreasyhealthy" rel="noopener">กลับไปคุยกับ OA</a>
+      </div>
     </div>
   </div>
 
 <script>
-  const LIFF_ID = "2007996778-ojPmjnww";
-  const OA_ADD_FRIEND_URL = "https://line.me/R/ti/p/@vreasyhealthy";
+  // ====== CONFIG ======
+  const LIFF_ID   = "2007996778-ojPmjnww";
+  const OA_URL    = "https://line.me/R/ti/p/@vreasyhealthy";
   const LEGACY_REGISTER = "https://www.legacy.co.th/member/register?sp=167328";
   const DONE_PAGE = "https://vrheralthy.github.io/vip/done.html";
+  const WEBAPP_URL= "https://script.google.com/macros/s/AKfycbxrIR6CdO-saT-5wcSznL99LJVL3sL0QSdD6cPmXBV86cCAWIEkj69ztTVbZPxchLE/exec";
+  // *** เปลี่ยนค่านี้ให้ตรงกับ Script property APP_TOKEN ***
+  const APP_TOKEN = "vRH-2025-ProdSecret"; // <- แก้เป็นของคุณ
 
-  function goRegister(){
+  // ====== HELPERS ======
+  const $ = (q)=>document.querySelector(q);
+  const statusEl = $('#status'); const actions = $('#actions'); const spin = $('#spin');
+  const setStatus = (txt,cls)=>{ statusEl.textContent = txt; statusEl.className = cls||''; };
+
+  function buildRegisterUrl(){
+    // แนบ return ไปยัง done.html
     const url = `${LEGACY_REGISTER}&return=${encodeURIComponent(DONE_PAGE)}`;
-    if (liff.isInClient()) {
-      liff.openWindow({ url, external:false });
-    } else {
-      window.location.assign(url);
-    }
+    return url;
+  }
+  function goRegister(){
+    const url = buildRegisterUrl();
+    if (liff.isInClient()) { liff.openWindow({ url, external:false }); }
+    else { window.location.assign(url); }
   }
 
-  async function main(){
-    await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser:true });
-    if (!liff.isLoggedIn()) { liff.login(); return; }
+  async function logEventStart(friendFlag, profile){
+    try{
+      const body = {
+        token: APP_TOKEN,
+        event: 'vip_register_start',
+        liffId: LIFF_ID,
+        userId: profile?.userId || '',
+        displayName: profile?.displayName || '',
+        pictureUrl: profile?.pictureUrl || '',
+        statusMessage: profile?.statusMessage || '',
+        friendFlag: !!friendFlag,
+        sourcePage: 'index.html',
+        referrer: document.referrer || '',
+        returnUrl: DONE_PAGE,
+        userAgent: navigator.userAgent,
+        origin: location.origin,
+        extra: { href: location.href }
+      };
+      await fetch(WEBAPP_URL, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(body),
+        mode: 'cors', // บางเบราว์เซอร์จะไม่โชว์ response แต่การบันทึกยังทำงาน
+        keepalive: true
+      });
+    }catch(e){ console.error('logEventStart error', e); }
+  }
 
-    const statusEl = document.getElementById('status');
-    const actions = document.getElementById('actions');
-
-    const friendship = await liff.getFriendship();
-    if (!friendship.friendFlag) {
-      statusEl.innerText = "ยังไม่ได้เป็นเพื่อนกับ @vreasyhealthy";
-      actions.innerHTML = `
-        <a class="btn btn-primary" href="${OA_ADD_FRIEND_URL}" target="_blank">➕ Add Friend</a>
-        <button class="btn" id="btnCheck">ฉันกด Add แล้ว</button>
-      `;
-      document.getElementById('btnCheck').onclick = () => window.location.reload();
-      return;
-    }
-
-    statusEl.innerText = "เป็นเพื่อนเรียบร้อย กำลังพาไปหน้าสมัครสมาชิก…";
+  function showAddFriend(){
+    setStatus("ยังไม่ได้เป็นเพื่อนกับ @vreasyhealthy","err");
+    spin.classList.add('hide');
+    actions.innerHTML = `
+      <a class="btn btn-primary" href="${OA_URL}" target="_blank" rel="noopener">➕ Add Friend</a>
+      <button class="btn" id="btnCheck">ฉันกด Add แล้ว</button>
+    `;
+    $('#btnCheck').onclick = ()=>window.location.reload();
+  }
+  function showGoRegisterUI(){
+    setStatus("เป็นเพื่อนเรียบร้อย กำลังพาไปหน้าสมัครสมาชิก…","ok");
     goRegister();
-
-    // ปุ่ม fallback
     setTimeout(()=>{
+      spin.classList.add('hide');
       actions.innerHTML = `<button class="btn btn-primary" id="btnGo">ไปสมัครสมาชิก</button>`;
-      document.getElementById('btnGo').onclick = goRegister;
+      $('#btnGo').onclick = goRegister;
     }, 1200);
   }
 
-  main().catch(err=>{
-    console.error(err);
-    document.getElementById('status').innerText = "ไม่สามารถโหลด LIFF ได้ กรุณาลองใหม่";
-  });
+  // ====== MAIN ======
+  (async () => {
+    try{
+      await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser:true });
+      if (!liff.isLoggedIn()) { liff.login(); return; }
+
+      $('#btnGoManual').onclick = goRegister;
+
+      const url = new URL(window.location.href);
+      // ถ้าถูกเรียกมาแบบผิด step ให้แค่โชว์ปุ่ม manual
+      if (url.searchParams.get('step') === 'done') {
+        setStatus("เรียกกลับหน้าสำเร็จแล้ว คุณสามารถกดกลับไปแชทได้","ok");
+        spin.classList.add('hide');
+        return;
+      }
+
+      const friendship = await liff.getFriendship().catch(()=>({friendFlag:false}));
+      const profile    = await liff.getProfile().catch(()=> ({}));
+      // บันทึกเริ่มต้น
+      logEventStart(friendship?.friendFlag, profile);
+
+      // ตัดสินใจ flow
+      if (!friendship?.friendFlag) showAddFriend();
+      else showGoRegisterUI();
+
+    }catch(err){
+      console.error(err);
+      setStatus("ไม่สามารถเริ่มการทำงานได้ กรุณาเปิดจากในแอป LINE หรือโหลดใหม่","err");
+      spin.classList.add('hide');
+    }
+  })();
 </script>
 </body>
 </html>
