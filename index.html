@@ -4,86 +4,212 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>VIP Entry | @vreasyhealthy</title>
+  <meta name="theme-color" content="#16a34a" />
+  <meta name="description" content="Add Friend @vreasyhealthy แล้วไปสมัครสมาชิก Legacy เพื่อรับสิทธิ์ VIP" />
   <style>
-    body { font-family: system-ui, sans-serif; padding: 20px; }
-    .card { max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #eee; border-radius: 16px; }
-    .btn { display:inline-block; padding:12px 16px; border-radius:12px; border:1px solid #ccc; text-decoration:none; }
-    .btn-primary { border-color:#2b8a3e; }
+    :root{
+      --bg:#0b0f14;        /* ดาร์กโหมดหรูๆ */
+      --card:#0f1720;
+      --muted:#8aa0b4;
+      --text:#e8f0f7;
+      --primary:#16a34a;
+      --primary-2:#22c55e;
+      --ring:#1f2937;
+      --border:#16212c;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 80% -10%, #17324a 0%, transparent 60%),
+                  radial-gradient(900px 500px at -10% 110%, #123b28 0%, transparent 60%),
+                  var(--bg);
+      color:var(--text);
+      -webkit-font-smoothing: antialiased;
+      line-height:1.55;
+      display:grid;
+      place-items:center;
+      padding:24px;
+    }
+    .wrap{width:100%; max-width:620px}
+    .brand{
+      display:flex; align-items:center; gap:12px; margin:0 0 16px;
+      color:#d9f99d; letter-spacing:.2px; font-weight:700; text-transform:uppercase; font-size:12px;
+    }
+    .chip{border:1px solid #2a3a47; padding:4px 10px; border-radius:999px; background:#0f1a22}
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.0)) , var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px;
+    }
+    h1{margin:0 0 6px; font-size:28px; letter-spacing:.2px}
+    p.lead{margin:0 0 16px; color:var(--muted)}
+    #status{margin-top:6px; color:#cfe1ff}
+    #debug{margin-top:10px; color:#93c5fd; font-size:12px; display:none}
+    .row{display:flex; gap:10px; flex-wrap:wrap; margin-top:18px}
+    .btn{
+      appearance:none; border:1px solid #2b3846; background:#0e1821; color:#dbeafe;
+      padding:12px 16px; border-radius:14px; cursor:pointer; font-weight:600;
+      transition: .15s ease; text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+    }
+    .btn:hover{transform: translateY(-1px); border-color:#3a4a5a}
+    .btn:active{transform: translateY(0)}
+    .btn-primary{
+      background:linear-gradient(180deg, var(--primary-2), var(--primary));
+      color:#06240f; border-color:#2dd36f; box-shadow:0 6px 20px rgba(34,197,94,.35);
+    }
+    .btn-primary:hover{filter:brightness(1.03)}
+    .btn-ghost{background:transparent}
+    .divider{height:1px; background:#17222e; margin:18px 0}
+    .muted{color:var(--muted); font-size:13px}
+    .center{display:flex; align-items:center; gap:10px}
+    .spinner{
+      width:18px; height:18px; border-radius:50%;
+      border:3px solid rgba(255,255,255,.15);
+      border-top-color:#93c5fd; animation:spin 0.9s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .hide{display:none !important}
+    .ok{color:#bbf7d0}
+    .err{color:#fecaca}
   </style>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-<div class="card">
-  <h2>VIP Registration</h2>
-  <p>กรุณา Add Friend กับ @vreasyhealthy ก่อน จากนั้นระบบจะพาไปสมัครสมาชิก</p>
-  <div id="status">กำลังตรวจสอบสถานะ…</div>
-  <div id="actions" style="margin-top:16px;"></div>
-</div>
+  <div class="wrap">
+    <div class="brand"><span class="chip">VREASYHEALTHY</span> VIP FLOW</div>
+    <div class="card" role="main">
+      <h1>VIP Registration</h1>
+      <p class="lead">กรุณา Add Friend กับ <b>@vreasyhealthy</b> ก่อน จากนั้นระบบจะพาไปสมัครสมาชิก Legacy เพื่อรับสิทธิพิเศษ</p>
+
+      <div class="center muted">
+        <div id="spin" class="spinner" aria-hidden="true"></div>
+        <div id="status" aria-live="polite">กำลังตรวจสอบสถานะ…</div>
+      </div>
+
+      <div class="row" id="actions" aria-label="actions"></div>
+      <div class="divider"></div>
+      <div class="muted">มีปัญหาไม่ถูกพาไปอัตโนมัติ? กดปุ่มด้านล่างได้เลย</div>
+      <div class="row">
+        <button class="btn btn-primary" id="btnGoManual">ไปสมัครสมาชิก</button>
+        <a class="btn btn-ghost" id="btnBackToOA" href="https://line.me/R/ti/p/@vreasyhealthy">กลับไปคุยกับ OA</a>
+      </div>
+
+      <div id="debug"></div>
+    </div>
+  </div>
 
 <script>
-  const LIFF_ID = "2007996778-ojPmjnww"; // ใส่ LIFF ID จริง
+  // ====== CONFIG ======
+  const LIFF_ID = "2007996778-ojPmjnww";
   const OA_ADD_FRIEND_URL = "https://line.me/R/ti/p/@vreasyhealthy";
   const LEGACY_REGISTER = "https://www.legacy.co.th/member/register?sp=167328";
-
-  // URL ที่จะให้ระบบ "กลับมาหลังสมัครเสร็จ"
-  // ถ้าแก้ไขหน้า legacy ไม่ได้ ให้คุณส่งลูกค้าไปสมัคร แล้วให้ลูกค้า “กดกลับ” เอง
-  // แต่ถ้าคุณมีหน้า bridge ของตัวเอง เช่น https://your-domain.com/vip-done ก็ใช้หน้านั้น
+  // optional return (หากปลายทางรองรับ)
   const RETURN_LIFF_DEEPLINK = `https://liff.line.me/${LIFF_ID}?step=done`;
 
-  async function main() {
-    await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true });
-    if (!liff.isLoggedIn()) liff.login();
+  // ====== HELPERS ======
+  const $ = (q)=>document.querySelector(q);
+  const statusEl = $('#status');
+  const actions  = $('#actions');
+  const spin     = $('#spin');
+  const debugEl  = $('#debug');
+  const setStatus = (txt, cls)=>{ statusEl.textContent = txt; statusEl.className = cls||''; };
+  const showDebug = (msg)=>{ debugEl.style.display='block'; debugEl.textContent = `DEBUG: ${msg}`; };
 
-    const statusEl = document.getElementById('status');
-    const actions = document.getElementById('actions');
-
-    // กรณีกลับมาหลังสมัคร
-    const url = new URL(window.location.href);
-    if (url.searchParams.get('step') === 'done') {
-      statusEl.innerText = "ขอบคุณที่สมัครสำเร็จ 🎉 ระบบจะพาคุณกลับไปที่แชท";
-      try {
-        if (liff.isInClient()) {
-          // ส่งข้อความยืนยันกลับหา OA (ถ้าต้องการ)
-          // await liff.sendMessages([{ type: 'text', text: 'VIP: Registration completed.' }]);
-          liff.closeWindow();
-        } else {
-          // กลับไปคุยกับ OA ผ่านลิงก์
-          window.location.href = "https://line.me/R/ti/p/@vreasyhealthy";
-        }
-      } catch (e) {
-        console.error(e);
+  function goRegister(){
+    // แนบ return ไว้ก่อน เผื่ออนาคตใช้ได้
+    const url = `${LEGACY_REGISTER}&return=${encodeURIComponent(RETURN_LIFF_DEEPLINK)}`;
+    try{
+      if (liff.isInClient()) {
+        liff.openWindow({ url, external:false });
+      } else {
+        // Fallback สำหรับเดสก์ท็อป/นอก LINE
+        window.location.assign(url);
       }
-      return;
-    }
-
-    // ตรวจว่าผู้ใช้เป็นเพื่อน OA แล้วหรือยัง
-    try {
-      const friendship = await liff.getFriendship();
-      if (!friendship.friendFlag) {
-        statusEl.innerText = "ยังไม่ได้เป็นเพื่อนกับ @vreasyhealthy";
-        actions.innerHTML = `
-          <a class="btn btn-primary" href="${OA_ADD_FRIEND_URL}" target="_blank" rel="noopener">➕ Add Friend</a>
-          <button class="btn" id="btnCheck">ฉันกด Add แล้ว</button>
-        `;
-        document.getElementById('btnCheck').onclick = () => window.location.reload();
-        return;
-      }
-
-      // เป็นเพื่อนแล้ว → ไปสมัครสมาชิก
-      statusEl.innerText = "เป็นเพื่อนเรียบร้อย กำลังพาไปหน้าสมัครสมาชิก…";
-      // แนบ state สำหรับให้ผู้ใช้กด “กลับสู่ LINE” ได้สะดวก
-      const state = encodeURIComponent(RETURN_LIFF_DEEPLINK);
-      const registerUrl = `${LEGACY_REGISTER}&return=${state}`;
-      // เปิดในหน้าเดียวกัน (in-app browser)
-      liff.openWindow({ url: registerUrl, external: false });
-
-    } catch (err) {
-      console.error(err);
-      statusEl.innerText = "ไม่สามารถตรวจสอบสถานะได้ กรุณาลองใหม่";
+    }catch(e){
+      console.error(e);
+      showDebug(e?.message || String(e));
+      window.location.href = url; // last resort
     }
   }
 
-  main();
+  function showAddFriend(){
+    setStatus("ยังไม่ได้เป็นเพื่อนกับ @vreasyhealthy", "err");
+    spin.classList.add('hide');
+    actions.innerHTML = `
+      <a class="btn btn-primary" href="${OA_ADD_FRIEND_URL}" target="_blank" rel="noopener">➕ Add Friend</a>
+      <button class="btn" id="btnCheck">ฉันกด Add แล้ว</button>
+    `;
+    $('#btnCheck').onclick = ()=>window.location.reload();
+  }
+
+  function showGoRegisterUI(){
+    setStatus("เป็นเพื่อนเรียบร้อย กำลังพาไปหน้าสมัครสมาชิก…", "ok");
+    // ลองพาไปอัตโนมัติ
+    goRegister();
+    // หากเบราว์เซอร์บล็อก pop/redirect อัตโนมัติ ให้ผู้ใช้กดเองได้
+    setTimeout(()=>{
+      spin.classList.add('hide');
+      actions.innerHTML = `<button class="btn btn-primary" id="btnGo">ไปสมัครสมาชิก</button>`;
+      $('#btnGo').onclick = goRegister;
+    }, 1200);
+  }
+
+  async function handleReturn(){
+    // กรณีกลับจากหน้าสมัคร (หากปลายทางส่งกลับ)
+    setStatus("ขอบคุณที่สมัครสำเร็จ 🎉 กำลังพาคุณกลับไปที่แชท…","ok");
+    try{
+      if (liff.isInClient()) {
+        // ถ้าต้องการแจ้งกลับ OA สามารถเปิดบรรทัดด้านล่าง
+        // await liff.sendMessages([{ type:'text', text:'VIP: Registration completed.' }]);
+        liff.closeWindow();
+      } else {
+        window.location.href = OA_ADD_FRIEND_URL;
+      }
+    }catch(e){
+      console.error(e);
+      showDebug(e?.message || String(e));
+      window.location.href = OA_ADD_FRIEND_URL;
+    }
+  }
+
+  // ====== MAIN ======
+  (async () => {
+    try{
+      await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true });
+      if (!liff.isLoggedIn()) { liff.login(); return; }
+
+      // ปุ่ม manual ตลอดเวลา
+      $('#btnGoManual').onclick = goRegister;
+
+      // เช็คว่าเป็น flow กลับจากสมัครหรือไม่
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('step') === 'done') {
+        await handleReturn();
+        return;
+      }
+
+      // ตรวจสถานะเพื่อน OA
+      const friendship = await liff.getFriendship();
+      if (!friendship?.friendFlag) {
+        showAddFriend();
+        return;
+      }
+      showGoRegisterUI();
+
+    }catch(err){
+      console.error(err);
+      setStatus("ไม่สามารถเริ่มการทำงานได้ กรุณาลองใหม่หรือเปิดจากในแอป LINE", "err");
+      spin.classList.add('hide');
+      showDebug(err?.message || String(err));
+      // ปล่อยให้ผู้ใช้กดปุ่ม manual
+    }
+  })();
 </script>
 </body>
 </html>
